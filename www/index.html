@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#16a34a">
+<title>🦊 Fährtenfuchs</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ================= START ================= -->
+<div class="screen active" id="screen-start">
+  <div class="start-bg" id="start-bg"></div>
+  <div class="start-content">
+    <div class="logo" id="start-logo"><span id="start-logo-emoji">🦊</span><img id="start-logo-img" alt="" style="display:none"></div>
+    <h1 id="start-title">Fährtenfuchs</h1>
+    <p class="sub" id="start-sub">Mit Rad oder zu Fuß – die Karte führt euch von Rätsel zu Rätsel bis ins Ziel!</p>
+    <button class="btn" id="btn-start">🦊 Los geht's!</button>
+    <button class="btn secondary" id="btn-resume" style="display:none">▶️ Weiterspielen (Checkpoint <span id="resume-step"></span>)</button>
+    <button class="btn secondary" id="btn-view-book" style="display:none">📖 Fotobuch ansehen</button>
+    <p class="parent-tip">Tipp für Eltern: 5× auf das Logo tippen öffnet den Planungsmodus</p>
+  </div>
+</div>
+
+<!-- ================= GAME ================= -->
+<div class="screen" id="screen-game">
+  <div id="game-header">
+    <span class="step-badge" id="step-badge">1 / 5</span>
+    <div class="info">
+      <div class="name" id="target-name">Nächster Checkpoint</div>
+      <div class="dist" id="target-dist">Suche GPS-Signal …</div>
+    </div>
+    <span class="mode-badge" id="mode-badge">🚲</span>
+  </div>
+  <div id="sim-banner">🧪 SIMULATION – auf Karte tippen = bewegen</div>
+  <div id="map"></div>
+  <button id="btn-center" title="Zentrieren">🎯</button>
+  <div id="game-footer">
+    <div class="hint-text" id="footer-hint">Folge der Route zum nächsten Checkpoint!</div>
+    <span id="gps-status">GPS …</span>
+  </div>
+</div>
+
+<!-- ================= RIDDLE MODAL ================= -->
+<div class="modal-backdrop" id="modal-riddle">
+  <div class="modal">
+    <h2>🧩 Rätsel!</h2>
+    <div class="riddle-q" id="riddle-q"></div>
+    <div id="riddle-input-wrap">
+      <input type="text" id="riddle-answer" placeholder="Deine Antwort …" autocomplete="off">
+    </div>
+    <div id="riddle-choices"></div>
+    <div class="wrong-msg" id="riddle-wrong">Hmm, das stimmt noch nicht – probiert's nochmal! 🤔</div>
+    <div class="hint-box" id="riddle-hintbox"></div>
+    <div class="row">
+      <button class="btn plain small" id="btn-hint" style="display:none">💡 Tipp</button>
+      <button class="btn" id="btn-check">Antwort prüfen</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= PHOTO MODAL ================= -->
+<div class="modal-backdrop" id="modal-photo">
+  <div class="modal">
+    <h2>📸 Erinnerungsfoto!</h2>
+    <p class="modal-sub">Macht ein Foto von euch am Checkpoint – es kommt ins Fotobuch!</p>
+    <label class="camera-drop" id="camera-drop">
+      <span class="cam-icon">📷</span>
+      Hier tippen und Foto machen
+      <input type="file" id="photo-input" accept="image/*" capture="environment" style="display:none">
+    </label>
+    <img id="photo-preview" alt="Foto-Vorschau">
+    <div class="row">
+      <button class="btn plain small" id="btn-photo-skip">Überspringen</button>
+      <button class="btn" id="btn-photo-ok" disabled>Weiter ➜</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= CELEBRATE ================= -->
+<div id="celebrate"><div class="big" id="celebrate-emoji">🎉</div></div>
+
+<!-- ================= DONE ================= -->
+<div class="screen" id="screen-done">
+  <div class="done-inner">
+    <div class="logo-big">🏆</div>
+    <h1>Ziel erreicht!</h1>
+    <p>Ihr habt alle Rätsel gelöst und die ganze Strecke geschafft. Stark!</p>
+    <button class="btn" id="btn-open-book">📖 Fotobuch ansehen</button>
+    <button class="btn secondary" id="btn-done-home">Zur Startseite</button>
+  </div>
+</div>
+
+<!-- ================= BOOK ================= -->
+<div class="screen" id="screen-book">
+  <div id="book-toolbar">
+    <button class="btn plain small" id="btn-book-back">← Zurück</button>
+    <span class="title">📖 Fotobuch</span>
+    <button class="btn small" id="btn-book-print">🖨️ Drucken / PDF</button>
+  </div>
+  <div id="book-pages"></div>
+</div>
+
+<!-- ================= EDIT ================= -->
+<div class="screen" id="screen-edit">
+  <div id="edit-header">
+    <span class="title">🛠️ Planungsmodus</span>
+    <button class="btn small" id="btn-edit-close">Fertig ✓</button>
+  </div>
+  <div id="edit-map"></div>
+  <div id="edit-body">
+    <p class="tip">👆 Tippe auf die Karte, um einen Checkpoint zu setzen. Marker lassen sich verschieben. Der letzte Checkpoint ist automatisch das Ziel! 🏁</p>
+    <div id="cp-list"></div>
+
+    <div class="edit-card">
+      <h3>⚙️ Allgemein</h3>
+      <label>Titel der Tour</label>
+      <input type="text" id="set-title" placeholder="z.B. Finns Geburtstags-Tour">
+      <label>Ankunftsradius (Meter) <span class="subnote">– wie nah man an den Checkpoint muss</span></label>
+      <input type="number" id="set-radius" min="10" max="200" step="5">
+      <div class="switch-row">
+        <input type="checkbox" id="set-sim">
+        <label for="set-sim">🧪 GPS-Simulation (zum Testen: Tippen auf Karte = Bewegen)</label>
+      </div>
+    </div>
+
+    <div class="edit-card">
+      <h3>🗺️ Navigation</h3>
+      <label>Fortbewegung</label>
+      <select id="set-profile">
+        <option value="bike">🚲 Fahrrad (echte Route)</option>
+        <option value="foot">🚶 Zu Fuß (echte Route)</option>
+        <option value="straight">📏 Luftlinie</option>
+      </select>
+      <div class="action-row">
+        <button class="btn plain small" id="btn-ors-test">🔍 Routing testen</button>
+      </div>
+      <p class="subnote" id="ors-status"></p>
+    </div>
+
+    <div class="edit-card">
+      <h3>🎨 Eigenes Design</h3>
+      <div class="brand-row">
+        <div class="brand-slot">
+          <label>Logo</label>
+          <img id="brand-logo-preview" class="brand-preview" alt="" style="display:none">
+          <div class="brand-btns">
+            <label class="btn plain small file-btn">📤 Hochladen<input type="file" id="brand-logo-input" accept="image/*" style="display:none"></label>
+            <button class="btn plain small" id="brand-logo-remove" style="display:none">🗑️</button>
+          </div>
+        </div>
+        <div class="brand-slot">
+          <label>Hintergrund</label>
+          <img id="brand-bg-preview" class="brand-preview" alt="" style="display:none">
+          <div class="brand-btns">
+            <label class="btn plain small file-btn">📤 Hochladen<input type="file" id="brand-bg-input" accept="image/*" style="display:none"></label>
+            <button class="btn plain small" id="brand-bg-remove" style="display:none">🗑️</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="edit-card">
+      <h3>🌍 Community-Routen</h3>
+      <p class="subnote">Fertige, geprüfte Touren von anderen Eltern – aussuchen, laden, losfahren.</p>
+      <div class="action-row">
+        <button class="btn plain small" id="btn-community">📚 Galerie öffnen</button>
+      </div>
+    </div>
+
+    <div class="edit-card">
+      <h3>📦 Teilen & Sichern</h3>
+      <div class="action-row">
+        <button class="btn plain small" id="btn-export">💾 Als Datei exportieren</button>
+        <button class="btn plain small" id="btn-import">📂 Datei importieren</button>
+        <input type="file" id="import-input" accept=".json,.jagd,application/json" style="display:none">
+        <button class="btn plain small" id="btn-share-link">🔗 Teilen-Link kopieren</button>
+      </div>
+      <p class="subnote">Die Datei/der Link enthält Route, Rätsel und Design – perfekt zum Weitergeben an andere Eltern.</p>
+    </div>
+
+    <div class="action-row" style="margin:16px 0 30px">
+      <button class="btn danger small" id="btn-reset-game">🔄 Spielstand löschen</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= COMMUNITY ================= -->
+<div class="modal-backdrop" id="modal-community">
+  <div class="modal">
+    <h2>🌍 Community-Routen</h2>
+    <div id="community-list" style="margin-top:12px"></div>
+    <div class="row">
+      <button class="btn plain small" id="btn-community-close">Schließen</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= CHECKPOINT FORM ================= -->
+<div class="modal-backdrop" id="modal-cp">
+  <div class="modal" id="cp-form">
+    <h2 id="cp-form-title">Checkpoint bearbeiten</h2>
+    <label>Name <span class="subnote">– z.B. „Alte Eiche im Park“</span></label>
+    <input type="text" id="cp-name" placeholder="Name des Ortes">
+    <label>Rätsel-Frage</label>
+    <textarea id="cp-question" rows="3" placeholder="z.B. Wie viele Bänke stehen rund um den Spielplatz?"></textarea>
+    <label>Antwort-Typ</label>
+    <select id="cp-type">
+      <option value="text">Text eingeben</option>
+      <option value="choice">Multiple Choice</option>
+    </select>
+    <div id="cp-text-wrap">
+      <label>Richtige Antwort <span class="subnote">– mehrere möglich, mit ; getrennt (z.B. „4; vier“)</span></label>
+      <input type="text" id="cp-answer" placeholder="Antwort">
+    </div>
+    <div id="cp-choice-wrap" style="display:none">
+      <label>Antwortmöglichkeiten <span class="subnote">– eine pro Zeile</span></label>
+      <textarea id="cp-options" rows="4" placeholder="Rot&#10;Blau&#10;Grün"></textarea>
+      <label>Richtige Antwort <span class="subnote">– genau wie oben geschrieben</span></label>
+      <input type="text" id="cp-correct" placeholder="Blau">
+    </div>
+    <label>Tipp (optional) <span class="subnote">– wird nach 2 Fehlversuchen angeboten</span></label>
+    <input type="text" id="cp-hint" placeholder="Kleiner Hinweis …">
+    <div class="row">
+      <button class="btn danger small" id="btn-cp-delete">🗑️</button>
+      <button class="btn plain small" id="btn-cp-cancel">Abbrechen</button>
+      <button class="btn" id="btn-cp-save">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/app.js"></script>
+</body>
+</html>

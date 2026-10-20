@@ -1,0 +1,8 @@
+{
+  "appId": "de.faehrtenfuchs.app",
+  "appName": "Fährtenfuchs",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": false
+  }
+}
